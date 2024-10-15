@@ -12,11 +12,11 @@ $cuenta = $_GET['cuenta'];
 
 
 $gestiones = array(); 
-$cuentas = array(); 
 // Construir la consulta SQL
-$sql = "select r.idRegistroReductores as id, r.Cuenta as cuenta, i.Propietario as propietario, CONCAT(i.Calle, ', ',i.Colonia, ', ', i.CP, ', ',i.Poblacion) as domicilio,
+$sql = "select r.idRegistroReductores as id, r.Cuenta as cuenta,f.id as id_folio,f.folio, i.Propietario as propietario, CONCAT(i.Calle, ', ',i.Colonia, ', ', i.CP, ', ',i.Poblacion) as domicilio,
 g.Nombre as gestor, i.seriemedidor,r.fechaCaptura as fecha,r.lectura,r.observaciones, r.Latitud as latitud, r.Longitud as longitud 
 from RegistroReductores as r
+left join foliosRegistroReductor as f on r.idRegistroReductores=f.idRegistroReductores
 inner join implementta as i on r.Cuenta=i.Cuenta
 inner join AspNetUsers as g on r.IdAspUser=g.Id
 where convert(date,r.fechaCaptura) >= '2024-10-01'";
@@ -43,12 +43,20 @@ if ($resultado === false) {
     // Recorrer los resultados y almacenarlos en el array de calificaciones
 while ($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)) {
     $fecha = $row['fecha'] ->format('Y-m-d H:i:s');
-    
+    if ($row['id_folio'] == null) {
+        $id_folio='';
+        $folio='';
+    }else{
+        $id_folio = $row['id_folio'];
+        $folio = $row['folio'];
+    }
    
 
     $gestiones[] = array(
         'id' => utf8_encode($row['id']),
         'cuenta' => utf8_encode($row['cuenta']),
+        'id_folio' => utf8_encode($id_folio),
+        'folio' => utf8_encode($folio),
         'propietario' => utf8_encode($row['propietario']),
         'domicilio' => utf8_encode($row['domicilio']),
         'gestor' => utf8_encode($row['gestor']),
@@ -59,14 +67,10 @@ while ($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)) {
         'latitud' => utf8_encode($row['latitud']),
         'longitud' => utf8_encode($row['longitud']),
     );
-    if (!in_array($row['cuenta'], $cuentas)) {
-        $cuentas[] = utf8_encode($row['cuenta']);
-    }
     
 }
 
 
-$cuentas = array_unique($cuentas);
 
 // Liberar los recursos
 sqlsrv_free_stmt($resultado);
@@ -74,6 +78,5 @@ sqlsrv_free_stmt($resultado);
 // Devolver los resultados en formato JSON
 echo json_encode([
     "data" => $gestiones,
-    "cuentas" => array_values($cuentas),
 ]);
 ?>

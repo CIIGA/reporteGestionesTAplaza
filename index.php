@@ -233,6 +233,7 @@ $cnx = conexion($plaza);
                                 <tr>
                                     <th>Opciones</th>
                                     <th>Cuenta</th>
+                                    <th>folio</th>
                                     <th>Propietario</th>
                                     <th>Domicilio</th>
                                     <th>Gestor</th>

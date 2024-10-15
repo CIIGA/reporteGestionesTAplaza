@@ -23,9 +23,10 @@ $cuenta = $_GET['cuenta'];
 
 
 // Construir la consulta SQL
-$sql = "select r.idRegistroReductores as id, r.Cuenta as cuenta, i.Propietario as propietario, CONCAT(i.Calle, ', ',i.Colonia, ', ', i.CP, ', ',i.Poblacion) as domicilio,
+$sql = "select r.idRegistroReductores as id, r.Cuenta as cuenta,f.id as id_folio,f.folio, i.Propietario as propietario, CONCAT(i.Calle, ', ',i.Colonia, ', ', i.CP, ', ',i.Poblacion) as domicilio,
 g.Nombre as gestor, i.seriemedidor,r.fechaCaptura as fecha,r.lectura,r.observaciones, r.Latitud as latitud, r.Longitud as longitud 
 from RegistroReductores as r
+left join foliosRegistroReductor as f on r.idRegistroReductores=f.idRegistroReductores
 inner join implementta as i on r.Cuenta=i.Cuenta
 inner join AspNetUsers as g on r.IdAspUser=g.Id
 where convert(date,r.fechaCaptura) >= '2024-10-01' ";
@@ -51,13 +52,14 @@ $sheet = $spreadsheet->getActiveSheet();
 // Agregar el título
 $title = "REPORTE DE GESTIONES";
 $sheet->setCellValue('A1', $title);
-$sheet->mergeCells('A1:J1');
+$sheet->mergeCells('A1:K1');
 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 $sheet->getStyle('A1')->getFont()->setBold(true);
 
 // Escribir los encabezados de la tabla
 $headers = [
     "Cuenta",
+    "Folio",
     "Propietario",
     "Domilicio",
     "Gestor",
@@ -80,13 +82,14 @@ while ($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)) {
     // $fecha = $row['fecha']->format('Y-m-d H:i:s');
 
     $sheet->setCellValue('A' . $fila, trim($row['cuenta']));
-    $sheet->setCellValue('B' . $fila, utf8_encode($row['propietario']));
-    $sheet->setCellValue('C' . $fila, utf8_encode($row['domicilio']));
-    $sheet->setCellValue('D' . $fila, utf8_encode($row['gestor']));
-    $sheet->setCellValue('E' . $fila, utf8_encode($row['seriemedidor']));
-    $sheet->setCellValue('F' . $fila, $row['fecha']);
-    $sheet->setCellValue('G' . $fila, $row['lectura']);
-    $sheet->setCellValue('H' . $fila, utf8_encode($row['observaciones']));
+    $sheet->setCellValue('B' . $fila, trim($row['folio']));
+    $sheet->setCellValue('C' . $fila, utf8_encode($row['propietario']));
+    $sheet->setCellValue('D' . $fila, utf8_encode($row['domicilio']));
+    $sheet->setCellValue('E' . $fila, utf8_encode($row['gestor']));
+    $sheet->setCellValue('F' . $fila, utf8_encode($row['seriemedidor']));
+    $sheet->setCellValue('G' . $fila, $row['fecha']);
+    $sheet->setCellValue('H' . $fila, $row['lectura']);
+    $sheet->setCellValue('I' . $fila, utf8_encode($row['observaciones']));
 
     $latitud = $row['latitud'];
     $longitud = $row['longitud'];
@@ -97,16 +100,16 @@ while ($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)) {
         $geopunto = "https://www.google.com/maps/search/?api=1&query={$latitud},{$longitud}";
 
         // Establecer el texto de la celda (por ejemplo, "Ubicación")
-        $sheet->setCellValue('I' . $fila, "Ubicación");
+        $sheet->setCellValue('J' . $fila, "Ubicación");
 
         // Configurar el hipervínculo con la URL del geopunto
-        $sheet->getCell('I' . $fila)->getHyperlink()->setUrl($geopunto);
+        $sheet->getCell('J' . $fila)->getHyperlink()->setUrl($geopunto);
 
         // Cambiar el color del texto de la celda a azul
-        $sheet->getStyle('I' . $fila)->getFont()->getColor()->setARGB(Color::COLOR_BLUE);
+        $sheet->getStyle('J' . $fila)->getFont()->getColor()->setARGB(Color::COLOR_BLUE);
     } else {
         // Si no hay latitud o longitud, dejar la celda vacía
-        $sheet->setCellValue('I' . $fila, "");
+        $sheet->setCellValue('J' . $fila, "");
     }
 
 
@@ -125,7 +128,7 @@ while ($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)) {
             ";
 
         $cnx_sql_fotos = sqlsrv_query($cnx, $sql_fotos);
-        $col_fotos = 'J';
+        $col_fotos = 'K';
 
         while ($row_fotos = sqlsrv_fetch_array($cnx_sql_fotos, SQLSRV_FETCH_ASSOC)) {
             // Agregar la etiqueta "Foto X" en la celda
@@ -165,9 +168,9 @@ $styleArray = [
         ],
     ],
 ];
-$sheet->getStyle('A1:J' . ($fila - 1))->applyFromArray($styleArray);
+$sheet->getStyle('A1:K' . ($fila - 1))->applyFromArray($styleArray);
 // Calcular el ancho automático de las columnas basado en el contenido
-foreach (range('A', 'J') as $columnID) {
+foreach (range('A', 'K') as $columnID) {
     $sheet->getColumnDimension($columnID)->setAutoSize(true);
 }
 // Guardar el archivo Excel temporalmente en el servidor
